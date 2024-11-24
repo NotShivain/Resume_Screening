@@ -205,31 +205,31 @@ def score_resume(resume_text):
         tips.append("Provide more details to make your resume more comprehensive.")
 
     # Additional scoring criteria
-    if 'Objective' in resume_text:
+    if 'Objective' in resume_text.lower():
         score += 10
         tips.append("[+] Awesome! You have added Objective")
     else:
         tips.append("[-] Please add your career objective, it will give your career intention to the Recruiters.")
 
-    if 'Declaration' in resume_text:
+    if 'Declaration' in resume_text.lower():
         score += 10
         tips.append("[+] Awesome! You have added Declaration")
     else:
         tips.append("[-] Please add Declaration. It will give the assurance that everything written on your resume is true and fully acknowledged by you.")
 
-    if 'Hobbies' in resume_text or 'Interests' in resume_text:
+    if 'Hobbies' in resume_text.lower() or 'Interests' in resume_text.lower():
         score += 10
         tips.append("[+] Awesome! You have added your Hobbies")
     else:
         tips.append("[-] Please add Hobbies. It will show your personality to the Recruiters and give the assurance that you are fit for this role or not.")
 
-    if 'Achievements' in resume_text:
+    if 'Achievements' in resume_text.lower():
         score += 10
         tips.append("[+] Awesome! You have added your Achievements")
     else:
         tips.append("[-] Please add Achievements. It will show that you are capable for the required position.")
 
-    if 'Projects' in resume_text:
+    if 'Projects' in resume_text.lower():
         score += 10
         tips.append("[+] Awesome! You have added your Projects")
     else:
@@ -238,15 +238,17 @@ def score_resume(resume_text):
     return min(score, 100), tips
 
 
-st.title("CVious")
+st.markdown("<h1 style='text-align: center; color: white;'> CVious </h1>", unsafe_allow_html=True)
 st.subheader("A Resume Analysis Tool")
+with st.expander("Developed By"):
+        st.info("""Shivain Singh, Aditya Sharma, Daksh Rawat, Akshay Singh""")
 def set_bg_hack_url():
         
     st.markdown(
          f"""
          <style>
          .stApp {{
-             background: url("https://i.pinimg.com/1200x/48/34/c1/4834c11fc0efdbbaad80c638e6e56933.jpg");
+             background: url("https://i.pinimg.com/736x/56/a0/5c/56a05ce54b5b652f2014af2c22f06415.jpg");
              background-size: cover
          }}
          </style>
@@ -257,57 +259,46 @@ set_bg_hack_url()
 uploaded_file = st.file_uploader("Upload your resume (PDF)", type="pdf")
 
 if uploaded_file is not None:
-    # Extract text from the uploaded PDF
-    text = extract_text(uploaded_file)
+    with st.spinner('Processing your resume...'):
+        text = extract_text(uploaded_file)
+        contact_number = extract_contact_number_from_resume(text)
+        email = extract_email_from_resume(text)
+        name = extract_name_from_resume(text)
+        category = predict_category(text)
+        education = extract_education_from_resume(text)
+        skills = extract_skills_from_resume(text)
+        job_recommendation = job_recommendation(text)
 
-    # Extract contact number
-    contact_number = extract_contact_number_from_resume(text)
+        score, tips = score_resume(text)
 
-    # Extract email
-    email = extract_email_from_resume(text)
+        st.markdown(f"<h2 style='text-align: center;'>{name}</h2>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: center;'>{contact_number} | {email}</p>", unsafe_allow_html=True)
+        st.success(f"Predicted Category: ")
+        st.markdown(f"<h3 style='text-align: center;'>{category}</h3>", unsafe_allow_html=True)
+        st.success(f"Recommended Job: ")
+        st.markdown(f"<h4 style='text-align: center;'>{job_recommendation}</h4>", unsafe_allow_html=True)
 
-    # Extract name
-    name = extract_name_from_resume(text)
+        my_bar = st.progress(0)
+        for percent_complete in range(score):
+            time.sleep(0.1)
+            my_bar.progress(percent_complete + 1)
+        st.success(f"Your Resume Score is: ")
+        st.markdown(f"<h1 style='text-align: center;'>{score}</h1>", unsafe_allow_html=True)
+        st.warning("Note: This score is calculated based on the content that you have in your Resume.")
+        st.toast("Successfully Processed your Resume!")
+        st.subheader("Skills")
+        st.write(", ".join(skills))
 
-    # Predict category from the text
-    category = predict_category(text)
-    
-    skills = extract_skills_from_resume(text)
-    # Recommend a job based on the text
-    job_recommendation = job_recommendation(text)
+        st.subheader("Education")
+        st.write(", ".join(education))
+        with st.expander("**Score Chart**"):
+            fig = px.pie(values=[score, 100 - score], names=['Score', 'Remaining'], title='Resume Score', color_discrete_sequence=['#4CAF50', '#FFC107'])
+            st.plotly_chart(fig)
+        with st.expander("**Resume Tips & Ideas💡**"):
+            for tip in tips:
+                if "[+]" in tip:
+                    st.info(f"✅ {tip}")
+                else:
+                    st.warning(f"🟠 {tip}")
 
-    # Score the resume and provide tips
-    score, tips = score_resume(text)
-
-    # Display the results in a visually appealing way
-    st.markdown(f"<h2 style='text-align: center;'>{name}</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: center;'>{contact_number} | {email}</p>", unsafe_allow_html=True)
-    st.markdown(f"<h3 style='text-align: center;'>Predicted Category: {category}</h3>", unsafe_allow_html=True)
-    st.markdown(f"<h4 style='text-align: center;'>Recommended Job: {job_recommendation}</h4>", unsafe_allow_html=True)
-
-    my_bar = st.progress(0)
-    for percent_complete in range(score):
-        time.sleep(0.1)
-        my_bar.progress(percent_complete + 1)
-    st.success(f"** Your Resume Writing Score: {score}**")
-    st.warning("** Note: This score is calculated based on the content that you have in your Resume. **")
-    st.balloons()
-    # Pie chart for resume score
-    fig = px.pie(values=[score, 100 - score], names=['Score', 'Remaining'], title='Resume Score', color_discrete_sequence=['#4CAF50', '#FFC107'])
-    st.plotly_chart(fig)
-
-
-    st.subheader("Skills")
-    st.write(", ".join(skills))
-
-    st.subheader("Education")
-    st.write(", ".join(['Computer Science', 'Management', 'Education', 'Data Analytics', 'Web Development']))
-
-    st.subheader("**Resume Tips & Ideas💡**")
-    for tip in tips:
-        if "[+]" in tip:
-            st.markdown(f"<h5 style='text-align: left; color: #FFFFFF;'>{tip}</h5>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<h5 style='text-align: left; color: #FFFFFF;'>{tip}</h5>", unsafe_allow_html=True)
-
-    
+        
